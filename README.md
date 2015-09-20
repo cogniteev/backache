@@ -12,6 +12,12 @@ up identical queries in the future.
 The processing itself is made asynchronously, and your consumers are spawned
 when awaited processing is finished.
 
+Default backends:
+
+* Asynchronous processing: [Celery](http://celery.readthedocs.org/)
+* Document cache: [MongoDB](https://www.mongodb.org/)
+* Processing queue: [Redis](http://redis.io/)
+
 # Installation
 
 ```shell
