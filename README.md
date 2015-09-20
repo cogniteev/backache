@@ -20,7 +20,41 @@ Default backends:
 
 # How it works
 
-![straightforward diagram schema](docs/straightforward.png)
+Assuming that you use RabbitMQ as message broker for Celery, here is what
+the processing of `key` with `op` operation looks like. `cb_args` are
+arguments that will be given to the callback dealing with the
+processing result.
+
+## Cache miss
+Here is what happens when the result of the `op` operation for the given
+`key` is not yet in the cache.
+![cache miss sequence diagram](docs/cache-miss.png)
+
+With the `task_id` returned, the client is able to wait for the end of the
+callback processing.
+
+## Cache hit
+The following diagram describes what happens when processing of `key` by the
+`op` operation already in the cache.
+
+![cache hit sequence diagram](docs/cache-hit.png)
+
+In this case, processing result is not sent to a delayed task but returned
+immediately to the client. Why doing that? Because in many situations,
+the client very well knows what to do with it, and in most situations, delay
+the result processing is less efficient.
+
+## Twice for the same price
+
+According to the kind of data you deal with, the time window during which
+two clients want to process an unknown resource is more or less large.
+In such situation, Backache acts very well by handling the two requests at
+once.
+
+![bulk sequence diagram](docs/bulk.png)
+
+The schema is quite idealistic, but if you fall in this use case, you might
+want to properly configure the execution delay of the task.
 
 # Installation
 

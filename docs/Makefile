@@ -1,6 +1,8 @@
 MSCGEN ?= mscgen
-MSCGEN_FILES = \
-	straightforward.mscgen
+MSCGEN_FILES =         \
+	cache-miss.mscgen    \
+	cache-hit.mscgen     \
+	twice-at-once.mscgen
 
 all: $(MSCGEN_FILES:.mscgen=.png)
 

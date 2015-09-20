@@ -1,0 +1,23 @@
+# MSC for some fictional process
+msc {
+  hscale = "2";
+  client, backache, mongodb, redis, rabbitmq, cpb[label="celery processing\nworker"], ccb[label="celery callback\nworker"], producer;
+  client => backache [label="get_or_delegate(op, key, cb_args)"];
+  backache => mongodb [label="(op, key) in cache?"];
+  mongodb >> backache [label="No!!!"];
+  backache => redis [label="SADD key cb_args to key"];
+  backache => rabbitmq [label="push processing task"];
+  backache >> client [label="return task id"];
+
+  rabbitmq => cpb [label="pull task"];
+  cpb => mongodb  [label="(op, key) in cache?"];
+  mongodb >> cpb [label="Not yet!!!"];
+  cpb => cpb [label="run op(key)"];
+  cpb => mongodb [label="Lock document(op, key)"];
+  cpb => redis [label="GET and DELETE key"];
+  redis >> cpb [label="cb_args of key"];
+  cpb => mongodb [label="insert doc(op, key, result) + unlock"];
+  cpb => rabbitmq [label="push callback (op, key, result, cb_args)"];
+  rabbitmq => ccb [label="pull task"];
+  ccb => producer [label="run callback(op, key, result, cb_args)"];
+}

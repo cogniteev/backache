@@ -1,0 +1,8 @@
+# MSC for some fictional process
+msc {
+  client, backache, mongodb;
+  client => backache [label="get_or_delegate(op, key, cb_args)"];
+  backache => mongodb [label="(op, key) in cache?"];
+  mongodb >> backache [label="Yes!!!"];
+  backache >> client [label="return cache result"];
+}

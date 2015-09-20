@@ -1,4 +1,4 @@
-* test unhashable payload
 * use a task signature as operation.
 This will use a chain(operation, end_of_<consume> method)
-* should not have to deference task twice => use a chain here
+* When cb_args are stolen by a prior task, catch AlreadyLocked error.
+* should the processing be done after locking the document?
