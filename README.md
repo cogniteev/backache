@@ -5,6 +5,13 @@
 [![Code Climate](https://codeclimate.com/github/cogniteev/backache/badges/gpa.svg)](https://codeclimate.com/github/cogniteev/backache)
 [![Code Health](https://landscape.io/github/cogniteev/backache/master/landscape.svg?style=plastic)](https://landscape.io/github/cogniteev/backache/master)
 
+Backache is a Python module providing an asynchronous URI processing library.
+Processing of your resources is made once and then stored in a cache, to speed
+up identical queries in the future.
+
+The processing itself is made asynchronously, and your consumers are spawned
+when awaited processing is finished.
+
 # Installation
 
 ```shell
