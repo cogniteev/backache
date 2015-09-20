@@ -1,0 +1,35 @@
+# MSC for some fictional process
+msc {
+  hscale = "2";
+  client1, client2, backache, redis, mongodb, rabbitmq, cpb1[label="celery processing\nworker1"], cpb2[label="celery processing\nworker1"] , ccb[label="celery callback\nworker"], producer;
+  client1 => backache [label="get_or_delegate(op, key, cb_args1)"];
+  backache => mongodb [label="(op, key) in cache?"];
+  mongodb >> backache [label="No!!!"];
+  backache => redis [label="SADD key cb_args1 to key"];
+  backache => rabbitmq [label="push processing task1"];
+  backache >> client1 [label="return task id"];
+
+  client2 => backache [label="get_or_delegate(op, key, cb_args2)"];
+  backache => mongodb [label="(op, key) in cache?"];
+  mongodb >> backache [label="No!!!"];
+  backache => redis [label="SADD key cb_args2 to key"];
+  backache => rabbitmq [label="push processing task2"];
+  backache >> client2 [label="return task id"];
+
+  rabbitmq => cpb1 [label="pull task1"];
+  cpb1 => mongodb  [label="(op, key) in cache?"];
+  mongodb >> cpb1 [label="Not yet!!!"];
+  cpb1 => cpb1 [label="run op(key)"];
+  cpb1 => mongodb [label="Lock document(op, key)"];
+
+  rabbitmq => cpb2 [label="pull task2"];
+  cpb2 => mongodb [label="try lock"];
+  cpb2 => cpb2 [label="Doc is locked.\nTerminate task"];
+
+  cpb1 => redis [label="GET and DELETE key"];
+  redis >> cpb1 [label="cb_args1 + cb_args2 of key"];
+  cpb1 => mongodb [label="insert doc(op, key, result) + unlock"];
+  cpb1 => rabbitmq [label="push callback (op, key, result, cb_args1 + cb_args2)"];
+  rabbitmq => ccb [label="pull task"];
+  ccb => producer [label="run callback(op, key, result, cb_args1) + cb_args2"];
+}

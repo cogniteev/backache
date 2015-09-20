@@ -126,8 +126,7 @@ class Backache(object):
         callback = self._operation_callback(operation)
         delay = delay or (callback is not None)
         if delay and cb_args is not None and any(cb_args):
-            if any(cb_args):
-                return callback(cached_doc, cb_args)
+            return callback(cached_doc, cb_args)
         else:
             return cached_doc, cb_args
 
