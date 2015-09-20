@@ -39,8 +39,7 @@ $ pip install tox
 $ tox
 ```
 
-The test-suite requires MongoDB 2.6 and Redis with Sentinel to be up
-and running.
+The test-suite requires MongoDB 2.6 and Redis to be up and running.
 
 # License
 
