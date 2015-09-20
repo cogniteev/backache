@@ -48,13 +48,17 @@ the result processing is less efficient.
 
 According to the kind of data you deal with, the time window during which
 two clients want to process an unknown resource is more or less large.
-In such situation, Backache acts very well by handling the two requests at
-once.
+In such situation, Backache tries to bulk the two requests in one single
+callback operation.
 
 ![bulk sequence diagram](docs/bulk.png)
 
-The schema is quite idealistic, but if you fall in this use case, you might
-want to properly configure the execution delay of the task.
+The situation is quite idealistic, but is more an optimization than a real
+breakthrough. But it raises a question:
+
+**Why isn't the operation executed inside the lock?**
+
+And this leads to the next *missing* section ... URI redirections.
 
 # Installation
 

@@ -1,8 +1,8 @@
 MSCGEN ?= mscgen
-MSCGEN_FILES =         \
-	cache-miss.mscgen    \
-	cache-hit.mscgen     \
-	twice-at-once.mscgen
+MSCGEN_FILES =      \
+	cache-miss.mscgen \
+	cache-hit.mscgen  \
+  bulk.mscgen
 
 all: $(MSCGEN_FILES:.mscgen=.png)
 
