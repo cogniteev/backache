@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import redis
@@ -19,6 +20,10 @@ class TestRedis(unittest.TestCase):
         pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
         self._connect(pool=pool)
 
+    @unittest.skipIf(
+        os.environ.get('TRAVIS_CI_BUILD') is not None,
+        'Disabled because Sentinel is not available on Travis-CI'
+    )
     def test_sentinel_connect(self):
         self._connect(**{
             'sentinels': [
