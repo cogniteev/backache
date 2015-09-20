@@ -18,6 +18,10 @@ Default backends:
 * Document cache: [MongoDB](https://www.mongodb.org/)
 * Processing queue: [Redis](http://redis.io/)
 
+# How it works
+
+![straightforward diagram schema](docs/straightforward.png)
+
 # Installation
 
 ```shell
