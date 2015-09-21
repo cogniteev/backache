@@ -40,7 +40,7 @@ class ResourceCache(object):  # pragma: no cover
         """
         raise NotImplementedError()
 
-    def fill(self, uri, content, redirects):
+    def fill(self, uri, content, redirects=None):
         """ Fill an existing document with the real content to cache.
 
         There is no need to know the payload to add redirect URIs
@@ -156,7 +156,8 @@ class MongoCache(ResourceCache):
             return document['uri'], document['cache']
         return None, None
 
-    def fill(self, operation, uri, content, redirects):
+    def fill(self, operation, uri, content, redirects=None):
+        redirects = redirects or []
         redirects.append(uri)
         update_operations = {}
         if content is not None:
