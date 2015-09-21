@@ -1,6 +1,6 @@
 cache:
     connection_params:
-        host: local.docker
+        host: localhost
     collection: backache
     db: backache
 resource:
