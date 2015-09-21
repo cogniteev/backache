@@ -91,5 +91,15 @@ class MongoTest(unittest.TestCase):
         self.assertEqual(cache.get('foo', 'bonjour')[1], 'content')
         self.assertEqual(cache.get('foo', 'lol')[1], 'content')
 
+    def test_indices(self):
+        cache = MongoCache(**self.OPTIONS)
+        for op in ['op1', 'op2']:
+            for key in ['key1', 'key2']:
+                try:
+                    cache.lock(op, key)
+                    cache.fill(op, key, 'content')
+                finally:
+                    cache.release(op, key)
+
 if __name__ == '__main__':
     unittest.main()

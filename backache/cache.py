@@ -140,16 +140,24 @@ class MongoCache(ResourceCache):
             raise ResourceNotLocked(operation, uri), None, sys.exc_info()[2]
 
     def get(self, operation, uri):
-        for query in self._get_queries(operation, uri):
-            document = self._collection.find_and_modify(
-                query['find'],
-                query['update']
-            )
-            if document is not None:
-                return document['uri'], document['cache']
+        document = self._collection.find_and_modify(
+            {
+                'operation': operation,
+                'status': MongoCache.CACHE_STATUS,
+                'redirects': uri
+            },
+            {
+                '$push': {
+                    'direct_hits': self._now_ms(),
+                },
+            },
+        )
+        if document is not None:
+            return document['uri'], document['cache']
         return None, None
 
     def fill(self, operation, uri, content, redirects):
+        redirects.append(uri)
         update_operations = {}
         if content is not None:
             update_operations.setdefault('$set', {})['cache'] = content
@@ -197,33 +205,3 @@ class MongoCache(ResourceCache):
     @classmethod
     def _now_ms(cls):
         return int(round(time.time() * 1000))
-
-    @classmethod
-    def _get_queries(cls, operation, uri):
-        now = cls._now_ms()
-        return [
-            {
-                'find': {
-                    'operation': operation,
-                    'status': MongoCache.CACHE_STATUS,
-                    'redirects': uri
-                },
-                'update': {
-                    '$push': {
-                        'direct_hits': now,
-                    },
-                },
-            },
-            {
-                'find': {
-                    'uri': uri,
-                    'operation': operation,
-                    'status': MongoCache.CACHE_STATUS,
-                },
-                'update': {
-                    '$push': {
-                        'redirect_hits': now,
-                    }
-                },
-            },
-        ]
