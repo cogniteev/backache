@@ -17,7 +17,5 @@ backache:
             consume:
                 queue: backache-{operation}
 
-#rabbit_app: &rabbit_app "amqp://foo:bar@localhost//"
-
 celery:
     CELERY_ALWAYS_EAGER: true

@@ -1,6 +1,8 @@
 from . core import Backache
 from . utils import nameddict
 
+DEFAULT_QUEUE = 'backache'
+
 
 class CeleryCache(Backache):
     def __init__(self, **kwargs):
@@ -15,6 +17,21 @@ class CeleryCache(Backache):
             return cached_doc
         else:
             return self._delegate_async(operation, uri)
+
+    def bulk_get_or_delegate(self, commands, cache_hits_cb):
+        """ Behavior and signature are the same than
+        `Backache:bulk_get_or_delegate`
+
+        :return:
+          task identifiers, asynchronously fired.
+        :rtype:
+          list of task identifier
+        """
+        misses = self.__super.bulk_get_or_delegate(commands, cache_hits_cb)
+        tasks = []
+        for operation, uri in misses:
+            tasks.append(self._delegate_async(operation, uri))
+        return tasks
 
     def _delegate_async(self, operation, uri):
         from celery import chain
@@ -43,7 +60,7 @@ class CeleryCache(Backache):
     def _celery_queue(self, task_name, operation):
         tasks_config = self._config.celery.get('tasks', {})
         task_config = tasks_config.get(task_name, {})
-        default_queue = self._config.celery.get('default_queue')
+        default_queue = self._config.celery.get('default_queue', DEFAULT_QUEUE)
         queue = task_config.get('queue', default_queue)
         return queue.format(operation=operation)
 

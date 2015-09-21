@@ -60,10 +60,47 @@ class Backache(object):
 
     def get_or_delegate(self, operation, uri, *cb_args):
         _, cached_doc = self._cached_document(operation, uri)
-        if cached_doc:
+        if cached_doc is not None:
             return cached_doc
         else:
             self._config.resource.add(operation, uri, *cb_args)
+
+    def bulk_get_or_delegate(self, commands, cache_hits_cb):
+        """ Process a bunch of requests at once.
+
+        :param dict commands:
+          requests to process. Structure of the dict is as follow:
+            key: tuple (operation, uri)
+            value: dict containing the key `cb_args` providing the
+            list of argument given to the final callback.
+
+        :param: callable cache_hits_cb:
+          function called containing all cache hits results. The callable
+          object is called with a `dict` passed in argument.
+          Structure of the dict is the same than the `commands` parameter
+          except the `dict` values has an extra `result` key providing
+          the cached result of the operation.
+
+        :return:
+          commands for which there were no cached value.
+        :rtype:
+          list of tuple (operation, uri)
+        """
+        cache_hits = {}
+        cache_misses = []
+        for (operation, uri), command in commands.iteritems():
+            cb_args = command['cb_args']
+            _, cached_doc = self._cached_document(operation, uri)
+            if cached_doc is not None:
+                cache_hits[(operation, uri)] = {
+                    'cb_args': cb_args,
+                    'result': cached_doc,
+                }
+            else:
+                self._config.resource.add(operation, uri, *cb_args)
+                cache_misses.append((operation, uri))
+        cache_hits_cb(cache_hits)
+        return cache_misses
 
     def _operation_callback(self, operation):
         op_cbs = self._config.callbacks.operations
