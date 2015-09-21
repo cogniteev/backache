@@ -1,5 +1,6 @@
 # Backache
 
+[![PyPI version](https://badge.fury.io/py/backache.svg)](http://badge.fury.io/py/backache)
 [![Build Status](https://travis-ci.org/cogniteev/backache.svg)](https://travis-ci.org/cogniteev/backache)
 [![Coverage Status](https://coveralls.io/repos/cogniteev/backache/badge.svg?branch=master&service=github)](https://coveralls.io/github/cogniteev/backache?branch=master)
 [![Code Climate](https://codeclimate.com/github/cogniteev/backache/badges/gpa.svg)](https://codeclimate.com/github/cogniteev/backache)
