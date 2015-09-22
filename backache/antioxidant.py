@@ -81,7 +81,7 @@ def celerize(celery_app, **config):
     @celery_app.task(name='backache.consume', bind=True)
     def backache_consume(task, operation, uri):
         result, cb_args = backache.consume(operation, uri)
-        if not any(cb_args):
+        if cb_args is not None and not any(cb_args):
             # do not call the callback
             task.request.callbacks = None
         return result, cb_args

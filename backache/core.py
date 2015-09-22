@@ -116,7 +116,7 @@ class Backache(object):
                                        cb_args, delay)
         else:
             if self._config.resource.count(operation, uri) == 0:
-                return
+                return None, None
             cached_doc, context = self._process_operation(operation, uri)
             try:
                 cb_args = self._update_cache(operation, uri,
@@ -124,7 +124,7 @@ class Backache(object):
             except ResourceLocked:
                 # Another task put the lock, and will take care of
                 # processing the job. Nothing to do here...
-                return None
+                return None, None
             return self._fire_callback(operation, uri, cached_doc,
                                        cb_args, delay)
 

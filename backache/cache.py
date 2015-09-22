@@ -153,7 +153,7 @@ class MongoCache(ResourceCache):
             },
         )
         if document is not None:
-            return document['uri'], document['cache']
+            return document['uri'], document.get('cache')
         return None, None
 
     def fill(self, operation, uri, content, redirects=None):
