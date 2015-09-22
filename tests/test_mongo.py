@@ -101,5 +101,39 @@ class MongoTest(unittest.TestCase):
                 finally:
                     cache.release(op, key)
 
+    def _get_document(self, cache, operation, uri):
+        document = cache._collection.find_one({
+            'operation': 'foo',
+            'uri': 'bar'
+        })
+        self.assertIsNotNone(document)
+        return document
+
+    def test_counters(self):
+        cache = MongoCache(**self.OPTIONS)
+        try:
+            cache.lock('foo', 'bar')
+            cache.fill('foo', 'bar', 'content', ['kikoo', 'lol'])
+        finally:
+            cache.release('foo', 'bar')
+        document = self._get_document(cache, 'foo', 'bar')
+        self.assertFalse('direct_hits' in document)
+        self.assertFalse('redirects_hits' in document)
+        self.assertEqual(
+            cache.get('foo', 'bar'),
+            ('bar', 'content')
+        )
+        document = self._get_document(cache, 'foo', 'bar')
+        self.assertTrue(len(document['direct_hits']), 1)
+        self.assertFalse('redirects_hits' in document)
+        self.assertEqual(
+            cache.get('foo', 'kikoo'),
+            ('bar', 'content')
+        )
+        document = self._get_document(cache, 'foo', 'bar')
+        self.assertTrue(len(document['direct_hits']), 1)
+        self.assertTrue(len(document['redirect_hits']), 1)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -144,11 +144,25 @@ class MongoCache(ResourceCache):
             {
                 'operation': operation,
                 'status': MongoCache.CACHE_STATUS,
-                'redirects': uri
+                'uri': uri
             },
             {
                 '$push': {
                     'direct_hits': self._now_ms(),
+                },
+            },
+        )
+        if document is not None:
+            return document['uri'], document.get('cache')
+        document = self._collection.find_and_modify(
+            {
+                'operation': operation,
+                'status': MongoCache.CACHE_STATUS,
+                'redirects': uri
+            },
+            {
+                '$push': {
+                    'redirect_hits': self._now_ms(),
                 },
             },
         )

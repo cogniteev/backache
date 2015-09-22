@@ -113,7 +113,10 @@ class TestToUpper(unittest.TestCase):
         Processing is not even launched
         """
         b = TestToUpper._backache(with_callback=True)
-        self.assertIsNone(b.consume('toupper', 'unknown_uri'))
+        self.assertEqual(
+            b.consume('toupper', 'unknown_uri'),
+            (None, None)
+        )
 
     def test_locked_resource(self):
         b = TestToUpper._backache(with_callback=True)
@@ -127,7 +130,7 @@ class TestToUpper(unittest.TestCase):
             # it will handle the request, and returns `None`
             self.assertEqual(
                 b.consume('toupper', 'foobar'),
-                None
+                (None, None)
             )
         finally:
             b._config.cache.release('toupper', 'foobar')
