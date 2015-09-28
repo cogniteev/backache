@@ -20,7 +20,7 @@ setup(
     author='Cogniteev',
     author_email='tech@cogniteev.com',
     url=root_url,
-    download_url=root_url + '/tarball/' + version,
+    download_url=root_url + '/archive/v' + version + '.tar.gz',
     license='Apache license version 2.0',
     keywords='cogniteev docido',
     classifiers=[
