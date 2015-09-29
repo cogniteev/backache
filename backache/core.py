@@ -53,9 +53,10 @@ class Backache(object):
         callbacks.setdefault('operations', {})
         self._config = nameddict({
             'cache': kwargs.get('cache_cls', MongoCache)(**cache_config),
-            'resource': resource_cls(**resource_config),
-            'operations': dict(kwargs.get('operations', {})),
             'callbacks': callbacks,
+            'mitigation': kwargs.get('mitigation', lambda _: False),
+            'operations': dict(kwargs.get('operations', {})),
+            'resource': resource_cls(**resource_config),
         })
 
     def get_or_delegate(self, operation, uri, *cb_args):
@@ -88,6 +89,7 @@ class Backache(object):
         """
         cache_hits = {}
         cache_misses = []
+        mitigate = self._config['mitigation'](len(commands))
         for (operation, uri), command in commands.iteritems():
             cb_args = command['cb_args']
             _, cached_doc = self._cached_document(operation, uri)
@@ -98,7 +100,14 @@ class Backache(object):
                 }
             else:
                 self._config.resource.add(operation, uri, *cb_args)
-                cache_misses.append((operation, uri))
+                if not mitigate:
+                    cache_misses.append((operation, uri))
+                else:
+                    result, cb_args = self.consume(operation, uri)
+                    cache_hits[(operation, uri)] = {
+                        'cb_args': cb_args,
+                        'result': result,
+                    }
         cache_hits_cb(cache_hits)
         return cache_misses
 
