@@ -20,6 +20,11 @@ class ResourceStore(object):  # pragma: no cover
 
     def add(self, operation, uri, *payloads):
         """Insert payloads in set for the given (operation, uri) key
+
+        :return:
+          `True` if there was no previous pending task registered for the
+          given key and operation, `False` otherwise.
+        :rtype: boolean
         """
 
     def count(self, operation, uri):
@@ -68,11 +73,15 @@ class RedisStore(ResourceStore):
             return [pickle.loads(e) for e in payloads]
 
     def add(self, operation, uri, *payloads):
-        self._retry(partial(
-            self._redis.sadd,
-            self._key(operation, uri),
+        key = self._key(operation, uri)
+        pipe = self._redis.pipeline()
+        pipe.scard(key)
+        pipe.sadd(
+            key,
             *[pickle.dumps(e) for e in payloads]
-        ))
+        )
+        count_before, _ = self._retry(pipe.execute)
+        return count_before == 0
 
     def count(self, operation, uri):
         return self._retry(partial(

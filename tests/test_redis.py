@@ -18,7 +18,7 @@ class TestRedis(unittest.TestCase):
 
     def test_pool_connect(self):
         pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
-        self._connect(pool=pool)
+        return self._connect(pool=pool)
 
     @unittest.skipIf(
         os.environ.get('TRAVIS_CI_BUILD') is not None,
@@ -38,6 +38,17 @@ class TestRedis(unittest.TestCase):
     def _connect(self, **config):
         store = RedisStore(**config)
         self.assertTrue(store.ping())
+        return store
+
+    def test_add_operation(self):
+        store = self.test_pool_connect()
+        store.pop('op', 'uri')
+        self.assertTrue(store.add('op', 'uri', 'foo'))
+        self.assertFalse(store.add('op', 'uri', 'foo'))
+        self.assertFalse(store.add('op', 'uri', 'foobar'))
+        self.assertFalse(store.add('op', 'uri', 'foo', 'plop', 'foobar'))
+        store.pop('op', 'uri')
+        self.assertTrue(store.add('op', 'uri', 'foo'))
 
 
 if __name__ == '__main__':
