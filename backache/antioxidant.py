@@ -29,8 +29,9 @@ class CeleryCache(Backache):
         """
         misses = self.__super.bulk_get_or_delegate(commands, cache_hits_cb)
         tasks = []
-        for operation, uri in misses:
-            tasks.append(self._delegate_async(operation, uri))
+        for operation, uri, appended in misses:
+            if not appended:
+                tasks.append(self._delegate_async(operation, uri))
         return tasks
 
     def _delegate_async(self, operation, uri):

@@ -46,7 +46,7 @@ class TestBulkOperation(unittest.TestCase):
         self.assertEqual(self._cache_hits_received, {})
         self.assertItemsEqual(
             cache_misses,
-            [('op1', 'key1'), ('op2', 'key2')]
+            [('op1', 'key1', False), ('op2', 'key2', False)]
         )
         result, cb_args = b.consume('op1', 'key1')
         self.assertEquals(result, 'op1-key1')
@@ -55,7 +55,7 @@ class TestBulkOperation(unittest.TestCase):
         cache_misses = b.bulk_get_or_delegate(commands, self._cache_hits_cb)
         self.assertEqual(
             cache_misses,
-            [('op2', 'key2')]
+            [('op2', 'key2', True)]
         )
         self.assertEqual(
             self._cache_hits_received,

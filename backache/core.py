@@ -82,9 +82,13 @@ class Backache(object):
           the cached result of the operation.
 
         :return:
-          commands for which there were no cached value.
+          commands for which there were no cached value. Each command has
+          an additional boolean parameter: `True` if the request has been
+          appended to a pending request for the same (operation, uri) but
+          different payloads, `False` otherwise.
+
         :rtype:
-          list of tuple (operation, uri)
+          list of tuple (operation, uri, appended)
         """
         cache_hits = {}
         cache_misses = []
@@ -97,8 +101,10 @@ class Backache(object):
                     'result': cached_doc,
                 }
             else:
-                self._config.resource.add(operation, uri, *cb_args)
-                cache_misses.append((operation, uri))
+                new_request = self._config.resource.add(
+                    operation, uri, *cb_args
+                )
+                cache_misses.append((operation, uri, not new_request))
         cache_hits_cb(cache_hits)
         return cache_misses
 
