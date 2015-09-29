@@ -32,9 +32,9 @@ class TestBulkOperation(unittest.TestCase):
         self._cache_hits_received = None
         b = self._backache()
         b._config.cache.clear()
-        for i in range(2):
-            for j in range(2):
-                b._config.resource.delete('op-%s' % i, 'key-%s' % i)
+        for i in range(1, 3):
+            for j in range(1, 3):
+                b._config.resource.delete('op%s' % i, 'key%s' % j)
 
     def test_without_celery(self):
         commands = {
