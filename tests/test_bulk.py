@@ -13,7 +13,7 @@ celery = Celery()
 
 class TestBulkOperation(unittest.TestCase):
     @classmethod
-    def _backache(cls, with_celery=False):
+    def _backache(cls, with_celery=False, with_mitigation=False):
         path = osp.splitext(__file__)[0] + '.yml'
         with open(path) as istr:
             config = yaml.load(istr)
@@ -22,6 +22,8 @@ class TestBulkOperation(unittest.TestCase):
             'op2': cls._operation2,
         }
         config['celery_app'] = celery
+        if with_mitigation:
+            config['mitigation'] = lambda _: True
         celery.config_from_object(config['celery'])
         if with_celery:
             return backache.celerize(**config)
@@ -66,6 +68,28 @@ class TestBulkOperation(unittest.TestCase):
                 },
             }
         )
+
+    def test_without_celery_mitigation(self):
+        b = self._backache(with_mitigation=True)
+        commands = {
+            ('op1', 'key1'): {'cb_args': ('arg1', 'arg2')},
+            ('op2', 'key2'): {'cb_args': ('arg3', 'arg4')},
+        }
+        self.assertEqual(
+            b.bulk_get_or_delegate(commands, self._cache_hits_cb),
+            []
+        )
+        self.assertEqual(len(self._cache_hits_received), 2)
+
+    def test_with_celery_mitigation(self):
+        commands = {
+            ('op1', 'key1'): {'cb_args': ('arg1', 'arg2')},
+            ('op2', 'key2'): {'cb_args': ('arg3', 'arg4')},
+        }
+        b = self._backache(with_celery=True, with_mitigation=True)
+        cache_misses = b.bulk_get_or_delegate(commands, self._cache_hits_cb)
+        self.assertEqual(cache_misses, [])
+        self.assertEqual(len(self._cache_hits_received), 2)
 
     def test_with_celery(self):
         commands = {
