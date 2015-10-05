@@ -63,7 +63,7 @@ class RedisStore(ResourceStore):
             self._sentinel = Sentinel(sentinels)
             self._redis = self._sentinel_connect()
             self._error_cb = self._sentinel_error_cb
-        self._uri = kwargs.get('uri', 'backache://{operation}/{uri}')
+        self._uri = unicode(kwargs.get('uri', 'backache://{operation}/{uri}'))
         self._logger = logging.getLogger('backache.redis')
 
     def delete(self, operation, uri):
