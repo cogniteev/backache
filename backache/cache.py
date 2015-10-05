@@ -104,29 +104,35 @@ class MongoCache(ResourceCache):
 
     def lock(self, operation, uri):
         try:
-            return self._collection.update({
-                'uri': uri,
-                'operation': operation,
-                'status': MongoCache.CACHE_STATUS,
-            }, {
-                '$set': {
-                    'status': MongoCache.LOCK_STATUS,
-                }
-            }, upsert=True)
+            return self._collection.update(
+                {
+                    'uri': uri,
+                    'operation': operation,
+                    'status': MongoCache.CACHE_STATUS,
+                },
+                {
+                    '$set': {
+                        'status': MongoCache.LOCK_STATUS,
+                    }
+                },
+                upsert=True
+            )
 
         except DuplicateKeyError:
             raise ResourceLocked(operation, uri), None, sys.exc_info()[2]
 
     def release(self, operation, uri):
-        result = self._collection.update({
-            'operation': operation,
-            'uri': uri,
-            'status': MongoCache.LOCK_STATUS,
-        }, {
-            '$set': {
-                'status': MongoCache.CACHE_STATUS,
-            },
-        })
+        result = self._collection.update(
+            {
+                'operation': operation,
+                'uri': uri,
+                'status': MongoCache.LOCK_STATUS,
+            }, {
+                '$set': {
+                    'status': MongoCache.CACHE_STATUS,
+                },
+            }
+        )
         if result['n'] != 1:
             raise ResourceNotLocked(operation, uri), None, sys.exc_info()[2]
 
@@ -203,7 +209,7 @@ class MongoCache(ResourceCache):
                 if cache.count() == 0:
                     raise UnknownResource(operation, uri)
                 elif cache.count() != 1:
-                    message = "Unexpected matched results when filling " \
+                    message = u"Unexpected matched results when filling " \
                               "document: {op}/{uri}, matched count: " \
                               "{matched_count}"
                     raise Exception(message.format(**error_args))
@@ -212,7 +218,7 @@ class MongoCache(ResourceCache):
                     if document['status'] == MongoCache.CACHE_STATUS:
                         raise ResourceAlreadyExists(operation, uri)
                     else:
-                        message = "Could not set document content: {op}/{uri}"
+                        message = u"Could not set document content: {op}/{uri}"
                         raise Exception(message.format(**error_args))
             finally:
                 cache.close()

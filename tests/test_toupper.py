@@ -31,8 +31,8 @@ class TestToUpper(unittest.TestCase):
     def setUp(self):
         b = TestToUpper._backache()
         b._config.cache.clear()
-        b._config.resource.delete('toupper', 'foobar')
-        b._config.resource.delete('buggy-operation', 'foobar')
+        b._config.resource.delete('toupper', u'foobar\xed')
+        b._config.resource.delete('buggy-operation', u'foobar\xed')
 
     def assertConsumeEqual(self, consume_result, expected):
         self.assertTrue(isinstance(consume_result, tuple))
@@ -44,66 +44,66 @@ class TestToUpper(unittest.TestCase):
     def test_no_delay(self):
         b = TestToUpper._backache()
         self.assertEqual(
-            b.get_or_delegate('toupper', 'foobar', 'item1'),
+            b.get_or_delegate('toupper', u'foobar\xed', 'item1'),
             None  # result not in cache yet
         )
         self.assertEqual(
-            b.get_or_delegate('toupper', 'foobar', 'item2'),
+            b.get_or_delegate('toupper', u'foobar\xed', 'item2'),
             None  # same query but different callback arguments
         )
         self.assertConsumeEqual(
-            b.consume('toupper', 'foobar', delay=False),
-            ('FOOBAR', ['item1', 'item2'])
+            b.consume('toupper', u'foobar\xed', delay=False),
+            (u'FOOBAR\xcd', ['item1', 'item2'])
         )
         self.assertEqual(
-            b.get_or_delegate('toupper', 'foobar', 'item3'),
-            'FOOBAR'  # now, result is in cache
+            b.get_or_delegate('toupper', u'foobar\xed', 'item3'),
+            u'FOOBAR\xcd'  # now, result is in cache
         )
 
     def test_consume_twice(self):
         b = TestToUpper._backache()
-        b.get_or_delegate('toupper', 'foobar', 'item1')
+        b.get_or_delegate('toupper', u'foobar\xed', 'item1')
         self.assertEqual(
-            b.consume('toupper', 'foobar', delay=False),
-            ('FOOBAR', ['item1'])
+            b.consume('toupper', u'foobar\xed', delay=False),
+            (u'FOOBAR\xcd', ['item1'])
         )
         # callback has been called
         self.assertEqual(
             self._cb_calls,
-            [{'result': 'FOOBAR', 'cb_args': set(['item2', 'item1'])}]
+            [{'result': u'FOOBAR\xcd', 'cb_args': set(['item2', 'item1'])}]
         )
         self._cb_calls = []
         # no callback arguments because previously consumed
         self.assertEqual(
-            b.consume('toupper', 'foobar', delay=False),
-            ('FOOBAR', [])
+            b.consume('toupper', u'foobar\xed', delay=False),
+            (u'FOOBAR\xcd', [])
         )
         self.assertEqual(self._cb_calls, [])
         # callback is not called because there is no callback argument
         self.assertEqual(
-            b.consume('toupper', 'foobar', delay=True),
-            ('FOOBAR', [])
+            b.consume('toupper', u'foobar\xed', delay=True),
+            (u'FOOBAR\xcd', [])
         )
         self.assertEqual(self._cb_calls, [])
 
     def test_callback(self):
         b = TestToUpper._backache(with_callback=True)
         self.assertEqual(
-            b.get_or_delegate('toupper', 'foobar', 'item1'),
+            b.get_or_delegate('toupper', u'foobar\xed', 'item1'),
             None  # result not in cache yet
         )
         self.assertEqual(
-            b.get_or_delegate('toupper', 'foobar', 'item2'),
+            b.get_or_delegate('toupper', u'foobar\xed', 'item2'),
             None
         )
         # consume returns what the callback returns
-        res = b.consume('toupper', 'foobar')
+        res = b.consume('toupper', u'foobar\xed')
         self.assertItemsEqual(res['cb_args'], ['item1', 'item2'])
-        self.assertEqual(res['result'], 'FOOBAR')
+        self.assertEqual(res['result'], u'FOOBAR\xcd')
         self.assertItemsEqual(
             self._cb_calls,
             [
-                {'result': 'FOOBAR', 'cb_args': set(['item1', 'item2'])},
+                {'result': u'FOOBAR\xcd', 'cb_args': set(['item1', 'item2'])},
             ]
         )
 
@@ -114,42 +114,43 @@ class TestToUpper(unittest.TestCase):
         """
         b = TestToUpper._backache(with_callback=True)
         self.assertEqual(
-            b.consume('toupper', 'unknown_uri'),
+            b.consume('toupper', u'unknown_ur\xed'),
             (None, None)
         )
 
     def test_locked_resource(self):
         b = TestToUpper._backache(with_callback=True)
-        b._config.cache.lock('toupper', 'foobar')
+        b._config.cache.lock('toupper', u'foobar\xed')
         try:
             self.assertEqual(
-                b.get_or_delegate('toupper', 'foobar', 'item1'),
+                b.get_or_delegate('toupper', u'foobar\xed', 'item1'),
                 None
             )
             # consume methods below another method has the lock, so assume
             # it will handle the request, and returns `None`
             self.assertEqual(
-                b.consume('toupper', 'foobar'),
+                b.consume('toupper', u'foobar\xed'),
                 (None, None)
             )
         finally:
-            b._config.cache.release('toupper', 'foobar')
+            b._config.cache.release('toupper', u'foobar\xed')
 
     def test_buggy_callback(self):
         b = TestToUpper._backache()
         b._config.callbacks.default = self._buggy_callback
         self.assertEqual(
-            b.get_or_delegate('toupper', 'foobar', 'item1'),
+            b.get_or_delegate('toupper', u'foobar\xed', 'item1'),
             None
         )
         with self.assertRaises(Exception) as exc:
-            b.consume('toupper', 'foobar')
+            b.consume('toupper', u'foobar\xed')
         self.assertEqual(
             exc.exception.message,
             'Ooops, I forgot zzzat'
         )
         # ensure cache is properly filled
-        self.assertEqual(b._config.cache.get('toupper', 'foobar')[1], 'FOOBAR')
+        self.assertEqual(b._config.cache.get('toupper', u'foobar\xed')[1],
+                         u'FOOBAR\xcd')
 
     def test_invalid_operation(self):
         b = TestToUpper._backache()
@@ -158,17 +159,17 @@ class TestToUpper(unittest.TestCase):
             raise Exception("Buggy operation")
         b._config.operations['buggy-operation'] = oops
         self.assertEqual(
-            b.get_or_delegate('buggy-operation', 'foobar', 'item1'),
+            b.get_or_delegate('buggy-operation', u'foobar\xed', 'item1'),
             None
         )
         with self.assertRaises(Exception) as exc:
-            b.consume('buggy-operation', 'foobar')
+            b.consume('buggy-operation', u'foobar\xed')
         self.assertEqual(
             exc.exception.message,
             'Buggy operation'
         )
         self.assertEqual(
-            b._config.cache.get('toupper', 'foobar'),
+            b._config.cache.get('toupper', u'foobar\xed'),
             (None, None)
         )
 
@@ -176,13 +177,13 @@ class TestToUpper(unittest.TestCase):
         b = TestToUpper._backache()
         # simulate failure of the `pop` operation
         b._config.resource.pop = mock.MagicMock(side_effect=KeyError('pika'))
-        b.get_or_delegate('toupper', 'foobar', 'item1')
+        b.get_or_delegate('toupper', u'foobar\xed', 'item1')
         with self.assertRaises(KeyError) as exc:
-            b.consume('toupper', 'foobar')
+            b.consume('toupper', u'foobar\xed')
         self.assertEqual(exc.exception.message, 'pika')
         # ensure there is no lock left behind
         self.assertEqual(
-            b._config.cache.get('toupper', 'foobar'),
+            b._config.cache.get('toupper', u'foobar\xed'),
             (None, None)
         )
 

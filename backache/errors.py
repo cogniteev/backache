@@ -13,7 +13,7 @@ class UnknownResource(BackacheError):
         super(UnknownResource, self).__init__(
             operation,
             uri,
-            "Unknown resource: {operation}/{uri}"
+            u"Unknown resource: {operation}/{uri}"
         )
 
 
@@ -22,7 +22,7 @@ class ResourceAlreadyExists(BackacheError):
         super(ResourceAlreadyExists, self).__init__(
             operation,
             uri,
-            "Resource already exists: {operation}/{uri}"
+            u"Resource already exists: {operation}/{uri}"
         )
 
 
@@ -31,7 +31,7 @@ class ResourceLocked(BackacheError):
         super(ResourceLocked, self).__init__(
             operation,
             uri,
-            "Resource is locked: {operation}/{uri}"
+            u"Resource is locked: {operation}/{uri}"
         )
 
 
@@ -40,5 +40,5 @@ class ResourceNotLocked(BackacheError):
         super(ResourceNotLocked, self).__init__(
             operation,
             uri,
-            "Resource is not locked: {operation}/{uri}"
+            u"Resource is not locked: {operation}/{uri}"
         )
