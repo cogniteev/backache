@@ -42,13 +42,13 @@ class TestRedis(unittest.TestCase):
 
     def test_add_operation(self):
         store = self.test_pool_connect()
-        store.pop('op', 'uri')
-        self.assertTrue(store.add('op', 'uri', 'foo'))
-        self.assertFalse(store.add('op', 'uri', 'foo'))
-        self.assertFalse(store.add('op', 'uri', 'foobar'))
-        self.assertFalse(store.add('op', 'uri', 'foo', 'plop', 'foobar'))
-        store.pop('op', 'uri')
-        self.assertTrue(store.add('op', 'uri', 'foo'))
+        store.pop('op', u'ur\xed')
+        self.assertTrue(store.add('op', u'ur\xed', 'foo'))
+        self.assertFalse(store.add('op', u'ur\xed', 'foo'))
+        self.assertFalse(store.add('op', u'ur\xed', 'foobar'))
+        self.assertFalse(store.add('op', u'ur\xed', 'foo', 'plop', 'foobar'))
+        store.pop('op', u'ur\xed')
+        self.assertTrue(store.add('op', u'ur\xed', 'foo'))
 
     class ErrorGenerator(object):
         def __init__(self, reply, attempt_before_success):
