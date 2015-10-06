@@ -35,6 +35,7 @@ class TestRedirect(unittest.TestCase):
             if res:
                 return res
             r = cls.REDIRECTS.get(r)
+
         cls.OPERATION_COMPUTED_COUNT += 1
         return 'foobar'
 

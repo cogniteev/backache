@@ -1,4 +1,5 @@
 import unittest
+import hashlib
 
 from pymongo import MongoClient
 
@@ -72,8 +73,9 @@ class MongoTest(unittest.TestCase):
         cache = MongoCache(**self.OPTIONS)
         self.collection.insert({
             'operation': 'foo',
-            'uri': 'bar',
+            'hash': hashlib.sha256('bar'.decode('utf8')).hexdigest(),
             'status': MongoCache.CACHE_STATUS,
+            'uri': 'bar',
         })
         with self.assertRaises(ResourceAlreadyExists) as exc:
             cache.fill('foo', 'bar', 'some_content', [])
@@ -106,8 +108,8 @@ class MongoTest(unittest.TestCase):
 
     def _get_document(self, cache, operation, uri):
         document = cache._collection.find_one({
-            'operation': 'foo',
-            'uri': 'bar'
+            'operation': operation,
+            'hash': hashlib.sha256(uri.decode('utf8')).hexdigest()
         })
         self.assertIsNotNone(document)
         return document

@@ -1,5 +1,6 @@
 import sys
 import time
+import hashlib
 
 from pymongo import MongoClient, ASCENDING
 from pymongo.errors import DuplicateKeyError
@@ -40,7 +41,7 @@ class ResourceCache(object):  # pragma: no cover
         """
         raise NotImplementedError()
 
-    def fill(self, uri, content, redirects=None):
+    def fill(self, operation, uri, content, redirects=None):
         """ Fill an existing document with the real content to cache.
 
         There is no need to know the payload to add redirect URIs
@@ -84,7 +85,7 @@ class MongoCache(ResourceCache):
         self._collection = self._db[kwargs.get('collection', 'backache')]
         self._collection.ensure_index(
             [
-                ('uri', ASCENDING),
+                ('hash', ASCENDING),
                 ('operation', ASCENDING),
             ],
             name='_backache_uri_op',
@@ -93,7 +94,7 @@ class MongoCache(ResourceCache):
         self._collection.ensure_index(
             [
                 ('operation', ASCENDING),
-                ('redirects', ASCENDING),
+                ('hashed_redirects', ASCENDING),
             ],
             name='_backache_redirects',
             unique=True
@@ -101,13 +102,15 @@ class MongoCache(ResourceCache):
 
     def clear(self):
         self._collection.drop()
+        self._collection.drop_indexes()
 
     def lock(self, operation, uri):
         try:
             return self._collection.update({
-                'uri': uri,
+                'hash': self._hash(uri),
                 'operation': operation,
                 'status': MongoCache.CACHE_STATUS,
+                'uri': uri,
             }, {
                 '$set': {
                     'status': MongoCache.LOCK_STATUS,
@@ -120,7 +123,7 @@ class MongoCache(ResourceCache):
     def release(self, operation, uri):
         result = self._collection.update({
             'operation': operation,
-            'uri': uri,
+            'hash': self._hash(uri),
             'status': MongoCache.LOCK_STATUS,
         }, {
             '$set': {
@@ -134,24 +137,24 @@ class MongoCache(ResourceCache):
         result = self._collection.remove({
             'operation': operation,
             'status': MongoCache.LOCK_STATUS,
-            'uri': uri,
+            'hash': self._hash(uri),
         })
         if result['n'] == 0:
             raise ResourceNotLocked(operation, uri), None, sys.exc_info()[2]
 
     def get(self, operation, uri):
         for op in [self._get_by_uri, self._get_by_redirects]:
-            doc = op(operation, uri)
+            doc = op(operation, self._hash(uri))
             if doc is not None:
                 return doc['uri'], doc.get('cache')
         return None, None
 
-    def _get_by_uri(self, operation, uri):
+    def _get_by_uri(self, operation, uri_hash):
         return self._collection.find_and_modify(
             {
                 'operation': operation,
                 'status': MongoCache.CACHE_STATUS,
-                'uri': uri,
+                'hash': uri_hash,
             },
             {
                 '$push': {
@@ -160,12 +163,12 @@ class MongoCache(ResourceCache):
             },
         )
 
-    def _get_by_redirects(self, operation, uri):
+    def _get_by_redirects(self, operation, uri_hash):
         return self._collection.find_and_modify(
             {
                 'operation': operation,
                 'status': MongoCache.CACHE_STATUS,
-                'redirects': uri,
+                'hashed_redirects': uri_hash,
             },
             {
                 '$push': {
@@ -183,15 +186,20 @@ class MongoCache(ResourceCache):
         if any(redirects):
             update_operations.update({
                 '$addToSet': {
-                    'redirects': {
-                        '$each': redirects,
+                    'hashed_redirects': {
+                        '$each': [
+                            self._hash(redirect) for redirect in redirects
+                        ],
                     },
+                    'redirects': {
+                        '$each': redirects
+                    }
                 },
             })
         result = self._collection.find_and_modify(
             {
                 'operation': operation,
-                'uri': uri,
+                'hash': self._hash(uri),
                 'status': MongoCache.LOCK_STATUS,
             },
             update_operations,
@@ -200,7 +208,7 @@ class MongoCache(ResourceCache):
         if result['value'] == None:
             cache = self._collection.find({
                 'operation': operation,
-                'uri': uri,
+                'hash': self._hash(uri),
             })
             try:
                 error_args = {'op': operation, 'uri': uri}
@@ -220,6 +228,9 @@ class MongoCache(ResourceCache):
                         raise Exception(message.format(**error_args))
             finally:
                 cache.close()
+
+    def _hash(self, uri):
+        return hashlib.sha256(uri.encode('utf8')).hexdigest()
 
     @classmethod
     def _now_ms(cls):
