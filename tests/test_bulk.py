@@ -3,7 +3,6 @@ import unittest
 
 from celery import Celery
 from celery.result import AsyncResult
-
 import yaml
 
 import backache
@@ -44,17 +43,23 @@ class TestBulkOperation(unittest.TestCase):
             ('op2', 'key2'): {'cb_args': ('arg3', 'arg4')},
         }
         b = self._backache()
-        cache_misses = b.bulk_get_or_delegate(commands, self._cache_hits_cb)
+        cache_misses, errors = b.bulk_get_or_delegate(
+            commands, self._cache_hits_cb
+        )
+        self.assertEqual(errors, [])
         self.assertEqual(self._cache_hits_received, {})
         self.assertItemsEqual(
             cache_misses,
             [('op1', 'key1', False), ('op2', 'key2', False)]
         )
         result, cb_args = b.consume('op1', 'key1')
+        self.assertEqual(errors, [])
         self.assertEquals(result, 'op1-key1')
         self.assertItemsEqual(cb_args, ['arg1', 'arg2'])
 
-        cache_misses = b.bulk_get_or_delegate(commands, self._cache_hits_cb)
+        cache_misses, errors = b.bulk_get_or_delegate(
+            commands, self._cache_hits_cb
+        )
         self.assertEqual(
             cache_misses,
             [('op2', 'key2', True)]
@@ -77,7 +82,7 @@ class TestBulkOperation(unittest.TestCase):
         }
         self.assertEqual(
             b.bulk_get_or_delegate(commands, self._cache_hits_cb),
-            []
+            ([], [])
         )
         self.assertEqual(len(self._cache_hits_received), 2)
 

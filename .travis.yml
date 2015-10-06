@@ -6,6 +6,7 @@ env:
 - TRAVIS_CI_BUILD=true
 services:
 - redis-server
+- rabbitmq
 addons:
   apt:
     sources:
@@ -13,12 +14,15 @@ addons:
     packages:
       - mongodb-org-server
       - mongodb-org-shell
+      - rabbitmq-server
 before_script:
-- sleep 15
 - mongo --version
 install:
 - travis_retry pip install -r requirements-dev.txt
 - travis_retry pip install tox>=2.1.1 coveralls
+- tox --notest
+before_script:
+- .tox/py27/bin/celery worker -Q backache,backache-quarantine -l WARNING -c1 -A tests.celery_worker &
 script:
 - tox -e $(echo py$TRAVIS_PYTHON_VERSION | tr -d . )
 after_success: coveralls --verbose

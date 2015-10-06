@@ -12,13 +12,17 @@ __all__ = [
 
 
 class OperationContext(object):
-    def __init__(self, operation=None, cache=None):
+    def __init__(self, operation, cache, **kwargs):
         self.__operation = operation
         self.__cache = cache
+        self._op_kwargs = kwargs
         self._match_uri = None
         self._redirects = []
 
     def get_or_add_redirect(self, uri):
+        """ Try to locate URI in cache. If not found, register this `uri`
+        being a redirect to the real URI.
+        """
         real_uri, result = self.__cache.get(self.__operation, uri)
         if result is not None:
             self._match_uri = real_uri
@@ -82,17 +86,23 @@ class Backache(object):
           except the `dict` values has an extra `result` key providing
           the cached result of the operation.
 
-        :return:
-          commands for which there were no cached value. Each command has
-          an additional boolean parameter: `True` if the request has been
-          appended to a pending request for the same (operation, uri) but
-          different payloads, `False` otherwise.
+        :return: cache misses and errors as a tuple
+          - first tuple elements are commands for which there were
+            no cached value. Each command has an additional `boolean`
+            parameter: `True` if the request has been appended to a
+            pending request for the same (operation, uri) but
+            different payloads, `False` otherwise.
+          - FIXME TCL
 
         :rtype:
-          list of tuple (operation, uri, appended)
+          tuple(
+            list of tuple (operation, uri, appended),
+            list of dict
+          )
         """
         cache_hits = {}
         cache_misses = []
+        errors = []
         mitigate = self._config.mitigation(len(commands))
         for (operation, uri), command in commands.iteritems():
             cb_args = command['cb_args']
@@ -109,30 +119,38 @@ class Backache(object):
                 if not mitigate:
                     cache_misses.append((operation, uri, not new_request))
                 else:
-                    result, cb_args = self.consume(operation, uri)
-                    cache_hits[(operation, uri)] = {
-                        'cb_args': cb_args,
-                        'result': result,
-                    }
+                    try:
+                        result, cb_args = self.consume(operation, uri)
+                    except Exception as e:
+                        errors.append(nameddict({
+                            'operation': operation,
+                            'uri': uri,
+                            'exc': e,
+                        }))
+                    else:
+                        cache_hits[(operation, uri)] = {
+                            'cb_args': cb_args,
+                            'result': result,
+                        }
         cache_hits_cb(cache_hits)
-        return cache_misses
+        return cache_misses, errors
 
     def _operation_callback(self, operation):
         op_cbs = self._config.callbacks.operations
         cb = op_cbs.get(operation, self._config.callbacks.default)
         return cb
 
-    def consume(self, operation, uri, delay=None):
+    def consume(self, operation, uri, op_kwargs=None):
         real_uri, cached_doc = self._cached_document(operation, uri)
-
         if cached_doc:
             cb_args = self._config.resource.pop(operation, uri)
-            return self._fire_callback(operation, uri, cached_doc,
-                                       cb_args, delay)
+            return self._fire_callback(operation, uri, cached_doc, cb_args)
         else:
             if self._config.resource.count(operation, uri) == 0:
                 return None, None
-            cached_doc, context = self._process_operation(operation, uri)
+            cached_doc, context = self._process_operation(
+                operation, uri, op_kwargs
+            )
             try:
                 cb_args = self._update_cache(operation, uri,
                                              cached_doc, context)
@@ -140,8 +158,7 @@ class Backache(object):
                 # Another task put the lock, and will take care of
                 # processing the job. Nothing to do here...
                 return None, None
-            return self._fire_callback(operation, uri, cached_doc,
-                                       cb_args, delay)
+            return self._fire_callback(operation, uri, cached_doc, cb_args)
 
     def _update_cache(self, operation, uri, cached_doc, context):
         resource_uri = uri
@@ -149,12 +166,19 @@ class Backache(object):
         with self._lock_document(operation, uri, cached_doc, redirects):
             return self._config.resource.pop(operation, resource_uri)
 
-    def _process_operation(self, operation, uri):
+    def _process_operation(self, operation, uri, op_kwargs):
         func = self._config.operations.get(operation)
         if func is None:
             raise Exception("Unknown operation '{}'".format(operation))
-        context = OperationContext(operation, self._config.cache)
-        return func(uri, context), context
+        op_kwargs = op_kwargs or {}
+        context = self._context(
+            operation=operation,
+            cache=self._config.cache,
+            **op_kwargs)
+        return func(uri, context, **op_kwargs), context
+
+    def _context(self, **kwargs):
+        return OperationContext(**kwargs)
 
     @contextmanager
     def _lock_document(self, operation, uri, content, redirects):
@@ -174,13 +198,14 @@ class Backache(object):
             self._config.cache.fill(operation, uri, content, redirects)
             self._config.cache.release(operation, uri)
 
-    def _fire_callback(self, operation, uri, cached_doc, cb_args, delay=False):
+    def _fire_callback(self, operation, uri, cached_doc,
+                       cb_args, cb_result=False):
         callback = self._operation_callback(operation)
-        delay = delay or (callback is not None)
-        if delay and cb_args is not None and any(cb_args):
-            return callback(cached_doc, cb_args)
-        else:
-            return cached_doc, cb_args
+        if callback and cb_args is not None and any(cb_args):
+            res = callback(cached_doc, cb_args)
+            if cb_result:
+                return res
+        return cached_doc, cb_args
 
     def _cached_document(self, operation, uri):
         """

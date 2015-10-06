@@ -37,3 +37,7 @@ class TestNamedDict(unittest.TestCase):
         }
         self.assertEqual(n.bar.bar, 44)
         self.assertEqual(n.bar.pika.plop, 45)
+
+
+if __name__ == '__main__':
+    unittest.main()

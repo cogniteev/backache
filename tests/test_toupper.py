@@ -52,7 +52,7 @@ class TestToUpper(unittest.TestCase):
             None  # same query but different callback arguments
         )
         self.assertConsumeEqual(
-            b.consume('toupper', u'foobar\xed', delay=False),
+            b.consume('toupper', u'foobar\xed'),
             (u'FOOBAR\xcd', ['item1', 'item2'])
         )
         self.assertEqual(
@@ -64,7 +64,7 @@ class TestToUpper(unittest.TestCase):
         b = TestToUpper._backache()
         b.get_or_delegate('toupper', u'foobar\xed', 'item1')
         self.assertEqual(
-            b.consume('toupper', u'foobar\xed', delay=False),
+            b.consume('toupper', u'foobar\xed'),
             (u'FOOBAR\xcd', ['item1'])
         )
         # callback has been called
@@ -75,13 +75,13 @@ class TestToUpper(unittest.TestCase):
         self._cb_calls = []
         # no callback arguments because previously consumed
         self.assertEqual(
-            b.consume('toupper', u'foobar\xed', delay=False),
+            b.consume('toupper', u'foobar\xed'),
             (u'FOOBAR\xcd', [])
         )
         self.assertEqual(self._cb_calls, [])
         # callback is not called because there is no callback argument
         self.assertEqual(
-            b.consume('toupper', u'foobar\xed', delay=True),
+            b.consume('toupper', u'foobar\xed'),
             (u'FOOBAR\xcd', [])
         )
         self.assertEqual(self._cb_calls, [])
@@ -96,10 +96,10 @@ class TestToUpper(unittest.TestCase):
             b.get_or_delegate('toupper', u'foobar\xed', 'item2'),
             None
         )
-        # consume returns what the callback returns
+        # consume returns raw result
         res = b.consume('toupper', u'foobar\xed')
-        self.assertItemsEqual(res['cb_args'], ['item1', 'item2'])
-        self.assertEqual(res['result'], u'FOOBAR\xcd')
+        self.assertEqual(res[0], u'FOOBAR\xcd')
+        self.assertItemsEqual(res[1], ['item1', 'item2'])
         self.assertItemsEqual(
             self._cb_calls,
             [

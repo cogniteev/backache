@@ -1,0 +1,27 @@
+rabbit_app: &rabbit_app "amqp://localhost//"
+
+cache:
+    connection_params:
+        host: localhost
+    collection: backache
+    db: backache
+resource:
+    strict:
+          host: localhost
+          port: 6379
+          db: 0
+    uri: backache://{operation}/{uri}
+
+celery:
+    #CELERY_ALWAYS_EAGER: true
+    BROKER_POOL_LIMIT: 200
+    BROKER_URL: *rabbit_app
+
+    CELERY_ACCEPT_CONTENT: [json, pickle]
+    CELERY_BACKEND: amqp
+    CELERY_CHORD_PROPAGATES: false
+    CELERY_DEFAULT_EXCHANGE: backache
+    CELERY_DEFAULT_QUEUE: backache
+    CELERY_TASK_SERIALIZER: pickle
+    CELERY_RESULT_SERIALIZER: pickle
+    CELERY_ACKS_LATE: true
