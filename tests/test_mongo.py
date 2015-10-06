@@ -82,11 +82,7 @@ class MongoTest(unittest.TestCase):
 
     def test_fill_redirects(self):
         cache = MongoCache(**self.OPTIONS)
-        try:
-            cache.lock('foo', 'bar')
-            cache.fill('foo', 'bar', 'content', ['kikoo', 'lol'])
-        finally:
-            cache.release('foo', 'bar')
+        self._insert_foo_bar_doc(cache)
         self.assertEqual(cache.get('foo', 'lol')[1], 'content')
 
         # Now let's add a redirect
@@ -116,13 +112,16 @@ class MongoTest(unittest.TestCase):
         self.assertIsNotNone(document)
         return document
 
-    def test_counters(self):
-        cache = MongoCache(**self.OPTIONS)
+    def _insert_foo_bar_doc(self, cache):
         try:
             cache.lock('foo', 'bar')
             cache.fill('foo', 'bar', 'content', ['kikoo', 'lol'])
         finally:
             cache.release('foo', 'bar')
+
+    def test_counters(self):
+        cache = MongoCache(**self.OPTIONS)
+        self._insert_foo_bar_doc(cache)
         document = self._get_document(cache, 'foo', 'bar')
         self.assertFalse('direct_hits' in document)
         self.assertFalse('redirects_hits' in document)
