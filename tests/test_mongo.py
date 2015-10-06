@@ -54,6 +54,13 @@ class MongoTest(unittest.TestCase):
         self.assertEqual(exc.exception.operation, 'foo')
         self.assertEqual(exc.exception.uri, 'bar')
 
+    def test_delete_unknown_lock(self):
+        cache = MongoCache(**self.OPTIONS)
+        with self.assertRaises(ResourceNotLocked) as exc:
+            cache.delete_lock('foo', 'bar')
+        self.assertEqual(exc.exception.operation, 'foo')
+        self.assertEqual(exc.exception.uri, 'bar')
+
     def test_fill_unknown_resource(self):
         cache = MongoCache(**self.OPTIONS)
         with self.assertRaises(UnknownResource) as exc:
