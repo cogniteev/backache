@@ -104,35 +104,29 @@ class MongoCache(ResourceCache):
 
     def lock(self, operation, uri):
         try:
-            return self._collection.update(
-                {
-                    'uri': uri,
-                    'operation': operation,
-                    'status': MongoCache.CACHE_STATUS,
-                },
-                {
-                    '$set': {
-                        'status': MongoCache.LOCK_STATUS,
-                    }
-                },
-                upsert=True
-            )
+            return self._collection.update({
+                'uri': uri,
+                'operation': operation,
+                'status': MongoCache.CACHE_STATUS,
+            }, {
+                '$set': {
+                    'status': MongoCache.LOCK_STATUS,
+                }
+            }, upsert=True)
 
         except DuplicateKeyError:
             raise ResourceLocked(operation, uri), None, sys.exc_info()[2]
 
     def release(self, operation, uri):
-        result = self._collection.update(
-            {
-                'operation': operation,
-                'uri': uri,
-                'status': MongoCache.LOCK_STATUS,
-            }, {
-                '$set': {
-                    'status': MongoCache.CACHE_STATUS,
-                },
-            }
-        )
+        result = self._collection.update({
+            'operation': operation,
+            'uri': uri,
+            'status': MongoCache.LOCK_STATUS,
+        }, {
+            '$set': {
+                'status': MongoCache.CACHE_STATUS,
+            },
+        })
         if result['n'] != 1:
             raise ResourceNotLocked(operation, uri), None, sys.exc_info()[2]
 
@@ -146,11 +140,18 @@ class MongoCache(ResourceCache):
             raise ResourceNotLocked(operation, uri), None, sys.exc_info()[2]
 
     def get(self, operation, uri):
-        document = self._collection.find_and_modify(
+        for op in [self._get_by_uri, self._get_by_redirects]:
+            doc = op(operation, uri)
+            if doc is not None:
+                return doc['uri'], doc.get('cache')
+        return None, None
+
+    def _get_by_uri(self, operation, uri):
+        return self._collection.find_and_modify(
             {
                 'operation': operation,
                 'status': MongoCache.CACHE_STATUS,
-                'uri': uri
+                'uri': uri,
             },
             {
                 '$push': {
@@ -158,13 +159,13 @@ class MongoCache(ResourceCache):
                 },
             },
         )
-        if document is not None:
-            return document['uri'], document.get('cache')
-        document = self._collection.find_and_modify(
+
+    def _get_by_redirects(self, operation, uri):
+        return self._collection.find_and_modify(
             {
                 'operation': operation,
                 'status': MongoCache.CACHE_STATUS,
-                'redirects': uri
+                'redirects': uri,
             },
             {
                 '$push': {
@@ -172,9 +173,6 @@ class MongoCache(ResourceCache):
                 },
             },
         )
-        if document is not None:
-            return document['uri'], document.get('cache')
-        return None, None
 
     def fill(self, operation, uri, content, redirects=None):
         redirects = redirects or []
