@@ -34,8 +34,8 @@ class MongoTest(unittest.TestCase):
         MongoCache(**self.OPTIONS)
         indices = list(self.collection.index_information())
         self.assertEqual(len(indices), 3)
-        self.assertIn('_backache_uri_op', indices)
-        self.assertIn('_backache_redirects', indices)
+        self.assertIn('_backache_hash_op', indices)
+        self.assertIn('_backache_redirects_op', indices)
 
     def test_lock(self):
         cache = MongoCache(**self.OPTIONS)

@@ -88,7 +88,7 @@ class MongoCache(ResourceCache):
                 ('hash', ASCENDING),
                 ('operation', ASCENDING),
             ],
-            name='_backache_uri_op',
+            name='_backache_hash_op',
             unique=True
         )
         self._collection.ensure_index(
@@ -96,7 +96,7 @@ class MongoCache(ResourceCache):
                 ('operation', ASCENDING),
                 ('hashed_redirects', ASCENDING),
             ],
-            name='_backache_redirects',
+            name='_backache_redirects_op',
             unique=True
         )
 
