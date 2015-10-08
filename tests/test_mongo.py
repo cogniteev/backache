@@ -152,10 +152,11 @@ class MongoTest(unittest.TestCase):
         self.assertIsNotNone(document)
         return document
 
-    def _insert_foo_bar_doc(self, cache):
+    def _insert_foo_bar_doc(self, cache, content=None):
+        content = content or 'content'
         try:
             cache.lock('foo', 'bar')
-            cache.fill('foo', 'bar', 'content', ['kikoo', 'lol'])
+            cache.fill('foo', 'bar', content, ['kikoo', 'lol'])
         finally:
             cache.release('foo', 'bar')
 
