@@ -6,6 +6,7 @@ import yaml
 
 import backache
 from backache.antioxidant import (
+    CeleryCache,
     ProcessingInQuarantineException,
 )
 from . celery_utils import (
@@ -79,6 +80,11 @@ class TestQuarantine(unittest.TestCase):
     def test_error_handling_with_celery(self):
         """Test celery error handling"""
         b = self._backache(with_celery=True)
+        for i in range(len(self.BULK_COMMANDS)):
+            # Simulate a previous query for the same operation ('op', 'key$i')
+            super(CeleryCache, b).get_or_delegate(
+                'op', 'key%s' % i, 'other%s' % i
+            )
         misses = b.bulk_get_or_delegate(
             self.BULK_COMMANDS,
             self._bulk_results_callback
@@ -86,18 +92,21 @@ class TestQuarantine(unittest.TestCase):
         for t in misses:
             self.assertIsInstance(t, AsyncResult)
             t.get()
-        self.assertEqual(
-            TasksResultsCollector.bulk_cache_hit_results,
-            [{('op', 'key0'): {'cb_args': ['arg0'], 'result': 'KEY0'}}],
+        self.assertEqual(len(TasksResultsCollector.bulk_cache_hit_results), 1)
+        cache_hit_result = TasksResultsCollector.bulk_cache_hit_results[0]
+        self.assertIn(('op', 'key0'), cache_hit_result)
+        self.assertEqual(cache_hit_result[('op', 'key0')]['result'], 'KEY0')
+        self.assertItemsEqual(
+            cache_hit_result[('op', 'key0')]['cb_args'],
+            ['arg0', 'other0'],
             "Mitigation is forced, computation must " +
             "have been done by this process"
         )
-        self.assertEqual(
-            self.results.processing_callbacks.apply_async().get(),
-            [{'result': 'KEY4', 'cb_args': ['arg4']}],
-            "'key4' computation must have been computed " +
-            "asynchronously and succeeds after several retries"
-        )
+        async_result = self.results.processing_callbacks.apply_async().get()
+        self.assertTrue(len(async_result), 1)
+        self.assertEqual(async_result[0]['result'], 'KEY4')
+        self.assertItemsEqual(async_result[0]['cb_args'], ['arg4', 'other4'])
+
         quarantine_tasks = self.results.quarantine_tasks.apply_async().get()
         self.assertEqual(len(quarantine_tasks), 3)
         quarantine_tasks = dict((q['uri'], q) for q in quarantine_tasks)
