@@ -1,3 +1,5 @@
+# pylint: disable=unbalanced-tuple-unpacking
+
 from functools import partial
 import itertools
 import logging
@@ -49,6 +51,7 @@ class RedisStore(ResourceStore):
     def __init__(self, **kwargs):
         super(RedisStore, self).__init__()
         self._retry = nameddict(kwargs.get('retry_policy', self.RETRY_POLICY))
+        self._error_cb = self._redis_error_cb
         if 'strict' in kwargs:
             self._redis = StrictRedis(**kwargs['strict'])
         elif 'pool' in kwargs:
@@ -134,7 +137,7 @@ class RedisStore(ResourceStore):
                 tts = next(interval_range)
                 time.sleep(tts)
 
-    def _error_cb(self, exc):
+    def _redis_error_cb(self, exc):
         self._logger.exception(exc)
 
     def _sentinel_error_cb(self, exc):

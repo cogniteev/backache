@@ -85,7 +85,7 @@ class CeleryCache(Backache):
                     op_kwargs=task_error.exc.op_kwargs
                 ))
             else:
-                self._move_in_quarantine(
+                self.move_in_quarantine(
                     task_error.operation,
                     task_error.uri,
                     task_error.exc
@@ -140,7 +140,7 @@ class CeleryCache(Backache):
         """
         return cached_doc, cb_args
 
-    def _move_in_quarantine(self, operation, uri, exc):
+    def move_in_quarantine(self, operation, uri, exc):
         if self._tasks.quarantine is not None:
             queue = self._config.celery.get(
                 'quarantine_queue',
@@ -211,7 +211,7 @@ def celerize(celery_app, **config):
                 kwargs={'op_kwargs': e.op_kwargs}
             )
         except ProcessingInQuarantineException as e:  # pragma: no cover
-            backache._move_in_quarantine(operation, uri, e)
+            backache.move_in_quarantine(operation, uri, e)
         if cb_args is not None and not any(cb_args):  # pragma: no cover
             # do not call the callback
             task.request.callbacks = None

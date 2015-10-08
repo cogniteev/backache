@@ -103,7 +103,6 @@ class Backache(object):
         cache_hits = {}
         cache_misses = []
         errors = []
-        mitigate = self._config.mitigation(len(commands))
         for (operation, uri), command in commands.iteritems():
             cb_args = command['cb_args']
             _, cached_doc = self._cached_document(operation, uri)
@@ -116,7 +115,7 @@ class Backache(object):
                 new_request = self._config.resource.add(
                     operation, uri, *cb_args
                 )
-                if not mitigate:
+                if not self._config.mitigation(len(commands)):
                     cache_misses.append((operation, uri, not new_request))
                 else:
                     try:
@@ -141,7 +140,7 @@ class Backache(object):
         return cb
 
     def consume(self, operation, uri, op_kwargs=None):
-        real_uri, cached_doc = self._cached_document(operation, uri)
+        _, cached_doc = self._cached_document(operation, uri)
         if cached_doc:
             cb_args = self._config.resource.pop(operation, uri)
             return self._fire_callback(operation, uri, cached_doc, cb_args)
