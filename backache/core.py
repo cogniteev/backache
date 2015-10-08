@@ -194,8 +194,10 @@ class Backache(object):
             raise
         else:
             # write document if no exception was raised in the context
-            self._config.cache.fill(operation, uri, content, redirects)
-            self._config.cache.release(operation, uri)
+            try:
+                self._config.cache.fill(operation, uri, content, redirects)
+            finally:
+                self._config.cache.release(operation, uri)
 
     def _fire_callback(self, operation, uri, cached_doc,
                        cb_args, cb_result=False):
