@@ -105,6 +105,9 @@ class MongoCache(ResourceCache):
         self._collection.drop_indexes()
 
     def lock(self, operation, uri):
+        return self._lock(operation, uri, MongoCache.LOCK_STATUS)
+
+    def _lock(self, operation, uri, status):
         try:
             return self._collection.update({
                 'hash': self._hash(uri),
@@ -113,7 +116,7 @@ class MongoCache(ResourceCache):
                 'uri': uri,
             }, {
                 '$set': {
-                    'status': MongoCache.LOCK_STATUS,
+                    'status': status,
                 }
             }, upsert=True)
 
@@ -214,10 +217,13 @@ class MongoCache(ResourceCache):
                 if cache.count() == 0:
                     raise UnknownResource(operation, uri)
                 elif cache.count() != 1:
-                    message = u"Unexpected matched results when filling " \
-                              "document: {op}/{uri}, matched count: " \
-                              "{matched_count}"
-                    raise Exception(message.format(**error_args))
+                    message = u"Unexpected matched results while filling " \
+                              "document: {op}/{uri}, matched: " \
+                              u"{count}"
+                    raise Exception(message.format(
+                        count=cache.count(),
+                        **error_args)
+                    )
                 else:
                     document = cache[0]
                     if document['status'] == MongoCache.CACHE_STATUS:

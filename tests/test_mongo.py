@@ -82,6 +82,44 @@ class MongoTest(unittest.TestCase):
         self.assertEqual(exc.exception.operation, 'foo')
         self.assertEqual(exc.exception.uri, 'bar')
 
+    def test_fill_twice(self):
+        cache = MongoCache(**self.OPTIONS)
+        self._insert_foo_bar_doc(cache)
+        self._insert_foo_bar_doc(cache, 'another_content')
+        uri, content = cache.get('foo', 'bar')
+        self.assertEqual(uri, 'bar')
+        self.assertEqual(content, 'another_content')
+
+    def test_fill_after_invalid_status(self):
+        cache = MongoCache(**self.OPTIONS)
+        cache._lock('foo', 'bar', -42)
+        with self.assertRaises(Exception) as exc:
+            cache.fill('foo', 'bar', 'content')
+        self.assertEqual(
+            exc.exception.message,
+            'Could not set document content: foo/bar'
+        )
+
+    def test_fill_with_multiple_match(self):
+        """Test fill method when there are 2 matching documents"""
+        # indices need to be deactivated...
+        cache = MongoCache(**self.OPTIONS)
+        cache._collection.drop_indexes()
+        uri = 'bar'
+        for _ in range(2):
+            cache._collection.insert({
+                'hash': hashlib.sha256(uri.decode('utf8')).hexdigest(),
+                'operation': 'foo',
+                'status': MongoCache.CACHE_STATUS
+            })
+        with self.assertRaises(Exception) as exc:
+            cache.fill('foo', 'bar', 'content')
+        self.assertEqual(
+            exc.exception.message,
+            'Unexpected matched results while filling document: ' +
+            'foo/bar, matched: 2'
+        )
+
     def test_fill_redirects(self):
         cache = MongoCache(**self.OPTIONS)
         self._insert_foo_bar_doc(cache)
