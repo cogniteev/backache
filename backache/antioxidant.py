@@ -138,6 +138,7 @@ class CeleryCache(Backache):
 
         :returns: 2 first arguments of the Celery `callback` task
         """
+        del kwargs  # unused
         return cached_doc, cb_args
 
     def move_in_quarantine(self, operation, uri, exc):
