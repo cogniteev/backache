@@ -25,13 +25,19 @@ class ProcessingInQuarantineException(Exception):
     """Raised by an operation task, it tells backache to move this failing
     task in a dedicated task used for quarantine
     """
-    def __init__(self, op_kwargs=None):
+    def __init__(self, op_kwargs=None, **kwargs):
         """
         :param dict op_kwargs:
-          kwargs arguments given the processing task
+          `kwargs` arguments given the task that raised this exception.
+
+        :param dict kwargs:
+          optional `dict` given to the quarantine task. It may provide
+          additional information, useful to investigate the issue like
+          status_code, errors, ...
         """
         super(ProcessingInQuarantineException, self).__init__()
         self.op_kwargs = op_kwargs
+        self.kwargs = kwargs
 
 
 class CeleryCache(Backache):
@@ -172,13 +178,18 @@ class AsyncOperationContext(OperationContext):
         """
         raise ProcessingRetryException(**kwargs)
 
-    def quarantine(self):
+    def quarantine(self, **kwargs):
         """Cancel this processing task and move it to a quarantine queue.
+
+        :param dict kwargs:
+          optional `dict` given to the quarantine task. It may provide
+          additional information, useful to investigate the issue like
+          status_code, errors, ...
 
         :raises ProcessingInQuarantineException:
           That must be catched by the processing task
         """
-        raise ProcessingInQuarantineException(self._op_kwargs)
+        raise ProcessingInQuarantineException(self._op_kwargs, **kwargs)
 
 
 def celerize(celery_app, **config):
@@ -195,7 +206,7 @@ def celerize(celery_app, **config):
                 operation, uri, op_kwargs=op_kwargs
             )
         except ProcessingRetryException as e:
-            raise task.retry(
+            raise task.retry(  # pragma NOCOVER
                 countdown=e.countdown,
                 kwargs={'op_kwargs': e.op_kwargs}
             )

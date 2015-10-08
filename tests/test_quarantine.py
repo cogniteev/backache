@@ -113,12 +113,15 @@ class TestQuarantine(unittest.TestCase):
         self.assertEqual(len(quarantine_tasks), 3)
         for key, task in quarantine_tasks.items():
             _id = key[-1:]
-            self.assertEqual(task['cb_args'], ['arg%s' % _id])
+            self.assertItemsEqual(
+                task['cb_args'], ['arg%s' % _id, 'other%s' % _id]
+            )
             if key == 'key1':
                 self.assertIsInstance(
                     task['exc'],
                     ProcessingInQuarantineException
                 )
+                self.assertEqual(task['exc'].kwargs, {'foo': 'bar'})
                 self.assertEqual(task['exc'].op_kwargs, {'attempt': 3})
             elif key == 'key2':
                 self.assertIsInstance(
@@ -150,7 +153,7 @@ class TestQuarantine(unittest.TestCase):
         if uri == 'key1':
             if attempt != 3:
                 raise context.retry(countdown=0, attempt=attempt + 1)
-            raise context.quarantine()
+            raise context.quarantine(foo='bar')
         elif uri == 'key2':
             raise context.quarantine()
         elif uri == 'key3':
