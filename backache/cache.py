@@ -183,19 +183,18 @@ class MongoCache(ResourceCache):
         update_operations = {}
         if content is not None:
             update_operations.setdefault('$set', {})['cache'] = content
-        if any(redirects):
-            update_operations.update({
-                '$addToSet': {
-                    'hashed_redirects': {
-                        '$each': [
-                            self._hash(redirect) for redirect in redirects
-                        ],
-                    },
-                    'redirects': {
-                        '$each': redirects
-                    }
+        update_operations.update({
+            '$addToSet': {
+                'hashed_redirects': {
+                    '$each': [
+                        self._hash(redirect) for redirect in redirects
+                    ],
                 },
-            })
+                'redirects': {
+                    '$each': redirects
+                }
+            },
+        })
         result = self._collection.find_and_modify(
             {
                 'operation': operation,
