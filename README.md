@@ -137,7 +137,7 @@ def quarantine_consumer(operation, uri, exc):
 
     :param Exception exc:
       The exception raised. Can be an instance of
-      `ProcessingInQuarantineException` if canceled by the task explicitely,
+      `ProcessingInQuarantineException` if canceled by the task explicitly,
       providing the `op_kwargs` parameters of the failed task, an instance
       of `Exception` otherwise.
     """
@@ -149,19 +149,26 @@ A processing task is given a `context` instance that allows the task
 to manage itself.
 
 #### Operation retry
-A task can retry itself in the future. It can provide a custom retry delay,
-and additional parameters.
+A task can retry itself in the future via the `retry` member method
+of the given *context*.
+The task can specify the `kwargs` arguments of the retried task.
 
 For instance, this can be used to know how many times the task
 has been retried. (see example below)
 
 #### Operation failure
 
-A processing tasks can also cancel itself definitely. In such event, the
+A processing tasks can also cancel itself definitely via the `quarantine`
+member method of the given context. In such event, the
 task is moved in a custom `quarantine` queue (by default *backache-queue*).
+Note that the `quarantine` member methods accepts `kwargs` argument,
+available in tasks pushed in the *backache-queue*.
 
-If a processing task throws an `Exception`, it is immediately moved in the
-*quarantine* queue.
+This can be used to push errors, status code, ...
+
+
+Note: If a processing task throws an `Exception`, it is immediately moved in
+the *quarantine* queue.
 
 #### Example:
 The operation task below demonstrate how a task can retry itself no more
