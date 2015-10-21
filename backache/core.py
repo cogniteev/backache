@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import logging
 
 from .cache import MongoCache
 from .resource import RedisStore
@@ -9,6 +10,8 @@ from .utils import nameddict
 __all__ = [
     'Backache',
 ]
+
+LOGGER = logging.getLogger(__name__)
 
 
 class OperationContext(object):
@@ -107,6 +110,8 @@ class Backache(object):
             cb_args = command['cb_args']
             _, cached_doc = self._cached_document(operation, uri)
             if cached_doc is not None:
+                LOGGER.debug(u'cache hit in bulk request: %s/%s',
+                             operation, uri)
                 cache_hits[(operation, uri)] = {
                     'cb_args': cb_args,
                     'result': cached_doc,
@@ -121,6 +126,8 @@ class Backache(object):
                     try:
                         result, cb_args = self.consume(operation, uri)
                     except Exception as e:
+                        LOGGER.debug(u'consume error in bulk request: %s/%s',
+                                     operation, uri)
                         errors.append(nameddict({
                             'operation': operation,
                             'uri': uri,
@@ -156,6 +163,7 @@ class Backache(object):
             except ResourceLocked:
                 # Another task put the lock, and will take care of
                 # processing the job. Nothing to do here...
+                LOGGER.debug(u'resource locked: %s/%s', operation, uri)
                 return None, None
             return self.fire_callback(operation, cached_doc, cb_args)
 

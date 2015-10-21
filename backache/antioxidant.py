@@ -1,8 +1,11 @@
+import logging
+
 from . core import Backache, OperationContext
 from . utils import nameddict
 
 DEFAULT_QUEUE = 'backache'
 DEFAULT_QUARANTINE_QUEUE = 'backache-quarantine'
+LOGGER = logging.getLogger(__name__)
 
 
 class ProcessingRetryException(Exception):
@@ -76,8 +79,13 @@ class CeleryCache(Backache):
         for operation, uri, appended in misses:
             if not appended:
                 tasks.append(self._delegate_async(operation, uri))
+            else:
+                LOGGER.debug(u'consume task already spawned for: %s/%s',
+                             operation, uri)
         for task_error in errors:
             if isinstance(task_error.exc, ProcessingRetryException):
+                LOGGER.debug(u'async spawn of failed mitigated task: %s/%s',
+                             task_error.operation, task_error.uri)
                 tasks.append(self._delegate_async(
                     task_error.operation,
                     task_error.uri,
@@ -142,6 +150,7 @@ class CeleryCache(Backache):
         return cached_doc, cb_args
 
     def move_in_quarantine(self, operation, uri, exc):
+        LOGGER.debug(u"move in quarantine: %s/%s", operation, uri)
         cb_args = self._config.resource.pop(operation, uri)
         if self._tasks.quarantine is not None:
             queue = self._config.celery.get(
@@ -217,6 +226,9 @@ def celerize(celery_app, **config):
         if cb_args is None or not any(cb_args):  # pragma: no cover
             # do not call the callback
             if backache._config.celery.skip_callback_when_no_payload:
+                LOGGER.debug('skip callback because no "cb_args": %s/%s',
+                             operation, uri)
+
                 task.request.callbacks = None
         return result, cb_args
 
