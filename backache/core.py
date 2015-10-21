@@ -143,7 +143,7 @@ class Backache(object):
         _, cached_doc = self._cached_document(operation, uri)
         if cached_doc:
             cb_args = self._config.resource.pop(operation, uri)
-            return self._fire_callback(operation, uri, cached_doc, cb_args)
+            return self.fire_callback(operation, cached_doc, cb_args)
         else:
             if self._config.resource.count(operation, uri) == 0:
                 return None, None
@@ -157,7 +157,7 @@ class Backache(object):
                 # Another task put the lock, and will take care of
                 # processing the job. Nothing to do here...
                 return None, None
-            return self._fire_callback(operation, uri, cached_doc, cb_args)
+            return self.fire_callback(operation, cached_doc, cb_args)
 
     def _update_cache(self, operation, uri, cached_doc, context):
         resource_uri = uri
@@ -199,8 +199,7 @@ class Backache(object):
             finally:
                 self._config.cache.release(operation, uri)
 
-    def _fire_callback(self, operation, uri, cached_doc,
-                       cb_args, cb_result=False):
+    def fire_callback(self, operation, cached_doc, cb_args, cb_result=False):
         callback = self._operation_callback(operation)
         if callback and cb_args is not None and any(cb_args):
             res = callback(cached_doc, cb_args)

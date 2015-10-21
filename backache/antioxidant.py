@@ -130,7 +130,7 @@ class CeleryCache(Backache):
         queue = task_config.get('queue', default_queue)
         return queue.format(operation=operation)
 
-    def _fire_callback(self, operation, uri, cached_doc, cb_args, **kwargs):
+    def fire_callback(self, operation, cached_doc, cb_args, **kwargs):
         """ Override parent member method
         The callback method is NOT directly called here. This code is
         executed in a Celery chain, and the next task is the callback,
@@ -222,7 +222,7 @@ def celerize(celery_app, **config):
     def backache_callback(args, operation, uri):
         cached_doc, cb_args = args
         _super = super(CeleryCache, backache)
-        return _super._fire_callback(operation, uri, cached_doc, cb_args, True)
+        return _super.fire_callback(operation, cached_doc, cb_args, True)
 
     config['celery_tasks'] = {
         'consume': backache_consume,
