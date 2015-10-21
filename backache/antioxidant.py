@@ -142,12 +142,12 @@ class CeleryCache(Backache):
         return cached_doc, cb_args
 
     def move_in_quarantine(self, operation, uri, exc):
+        cb_args = self._config.resource.pop(operation, uri)
         if self._tasks.quarantine is not None:
             queue = self._config.celery.get(
                 'quarantine_queue',
                 DEFAULT_QUARANTINE_QUEUE
             )
-            cb_args = self._config.resource.pop(operation, uri)
             return self._tasks.quarantine.apply_async(
                 args=(operation, uri, cb_args, exc),
                 queue=queue
