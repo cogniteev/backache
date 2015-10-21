@@ -76,6 +76,12 @@ class TestQuarantine(unittest.TestCase):
         self.assertIsInstance(errors['key1'], AttributeError)
         self.assertIsInstance(errors['key2'], AttributeError)
         self.assertIsInstance(errors['key3'], Exception)
+        for op, key in self.BULK_COMMANDS.keys():
+            if key == 'key0':
+                resource_count = 0
+            else:
+                resource_count = 1
+            self.assertEqual(b._config.resource.count(op, key), resource_count)
 
     def test_error_handling_with_celery(self):
         """Test celery error handling"""
@@ -131,6 +137,9 @@ class TestQuarantine(unittest.TestCase):
                 self.assertEqual(task['exc'].op_kwargs, {})
             elif key == 'key3':
                 self.assertIsInstance(task['exc'], Exception)
+        # all keys have been consumed in resource store
+        for op, key in self.BULK_COMMANDS.keys():
+            self.assertEqual(b._config.resource.count(op, key), 0)
 
     BULK_COMMANDS = dict(
         (('op', 'key%s' % i), {'cb_args': ('arg%s' % i,)})
