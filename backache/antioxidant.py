@@ -214,7 +214,7 @@ def celerize(celery_app, **config):
             )
         except ProcessingInQuarantineException as e:  # pragma: no cover
             backache.move_in_quarantine(operation, uri, e)
-        if cb_args is not None and not any(cb_args):  # pragma: no cover
+        if cb_args is None or not any(cb_args):  # pragma: no cover
             # do not call the callback
             task.request.callbacks = None
         return result, cb_args
