@@ -216,7 +216,8 @@ def celerize(celery_app, **config):
             backache.move_in_quarantine(operation, uri, e)
         if cb_args is None or not any(cb_args):  # pragma: no cover
             # do not call the callback
-            task.request.callbacks = None
+            if backache._config.celery.skip_callback_when_no_payload:
+                task.request.callbacks = None
         return result, cb_args
 
     @celery_app.task(name='backache.callback',
@@ -231,6 +232,7 @@ def celerize(celery_app, **config):
         'callback': backache_callback,
         'quarantine': config['celery'].get('quarantine_task'),
     }
+    config['celery'].setdefault('skip_callback_when_no_payload', True)
 
     backache = CeleryCache(**config)
     return backache

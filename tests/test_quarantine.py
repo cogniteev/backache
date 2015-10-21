@@ -44,6 +44,8 @@ class TestQuarantine(unittest.TestCase):
             )
         # register quarantine celery task
         config['celery']['quarantine_task'] = quarantine_callback
+        # disable optmization for UT
+        config['celery']['skip_callback_when_no_payload'] = False
         cls.backache_config = config
 
     @classmethod
