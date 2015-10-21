@@ -199,7 +199,8 @@ def celerize(celery_app, **config):
     """
     backache = None
 
-    @celery_app.task(name='backache.consume', bind=True)
+    @celery_app.task(name='backache.consume', bind=True,
+                     max_retries=None, default_retry_delay=60)
     def backache_consume(task, operation, uri, op_kwargs=None):
         result, cb_args = None, None
         try:
@@ -218,7 +219,8 @@ def celerize(celery_app, **config):
             task.request.callbacks = None
         return result, cb_args
 
-    @celery_app.task(name='backache.callback')
+    @celery_app.task(name='backache.callback',
+                     max_retries=None, default_retry_delay=60)
     def backache_callback(args, operation, uri):
         cached_doc, cb_args = args
         _super = super(CeleryCache, backache)
