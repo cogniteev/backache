@@ -76,12 +76,8 @@ class CeleryCache(Backache):
             commands, cache_hits_cb
         )
         tasks = []
-        for operation, uri, appended in misses:
-            if not appended:
-                tasks.append(self._delegate_async(operation, uri))
-            else:
-                LOGGER.debug(u'consume task already spawned for: %s/%s',
-                             operation, uri)
+        for operation, uri, _ in misses:
+            tasks.append(self._delegate_async(operation, uri))
         for task_error in errors:
             if isinstance(task_error.exc, ProcessingRetryException):
                 LOGGER.debug(u'async spawn of failed mitigated task: %s/%s',
