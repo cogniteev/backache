@@ -128,10 +128,8 @@ class TestToUpper(unittest.TestCase):
             )
             # consume methods below another method has the lock, so assume
             # it will handle the request, and returns `None`
-            self.assertEqual(
-                b.consume('toupper', u'foobar\xed'),
-                (None, None)
-            )
+            with self.assertRaises(backache.ResourceLocked):
+                b.consume('toupper', u'foobar\xed')
         finally:
             b._config.cache.release('toupper', u'foobar\xed')
 

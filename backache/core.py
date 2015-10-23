@@ -125,6 +125,8 @@ class Backache(object):
                 else:
                     try:
                         result, cb_args = self.consume(operation, uri)
+                    except ResourceLocked:
+                        pass
                     except Exception as e:
                         LOGGER.debug(u'consume error in bulk request: %s/%s',
                                      operation, uri)
@@ -164,7 +166,7 @@ class Backache(object):
                 # Another task put the lock, and will take care of
                 # processing the job. Nothing to do here...
                 LOGGER.debug(u'resource locked: %s/%s', operation, uri)
-                return None, None
+                raise
             return self.fire_callback(operation, cached_doc, cb_args)
 
     def _update_cache(self, operation, uri, cached_doc, context):
