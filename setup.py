@@ -12,15 +12,14 @@ with open(init_file) as istr:
         if l.startswith('__version__ = '):
             exec(l)
             break
-version = '.'.join(map(str, __version__))
 setup(
     name=module_name,
-    version=version,
+    version=__version__,
     description='Docido software development kit for Python',
     author='Cogniteev',
     author_email='tech@cogniteev.com',
     url=root_url,
-    download_url=root_url + '/archive/v' + version + '.tar.gz',
+    download_url=root_url + '/archive/v' + __version__ + '.tar.gz',
     license='Apache license version 2.0',
     keywords='cogniteev docido',
     classifiers=[

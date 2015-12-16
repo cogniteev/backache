@@ -6,4 +6,4 @@ from . antioxidant import (  # flake8: noqa
 )
 from . errors import *
 
-__version__ = (0, 0, 7)
+__version__ = '0.0.8-dev'
