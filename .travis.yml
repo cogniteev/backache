@@ -10,19 +10,18 @@ services:
 addons:
   apt:
     sources:
-      - mongodb-upstart
+    - mongodb-upstart
     packages:
-      - mongodb-org-server
-      - mongodb-org-shell
-      - rabbitmq-server
+    - mongodb-org-server
+    - mongodb-org-shell
+    - rabbitmq-server
 before_script:
-- mongo --version
+- .tox/py27/bin/celery worker -Q backache,backache-quarantine -l WARNING -c1 -A tests.celery_worker
+  &
 install:
 - travis_retry pip install -r requirements-dev.txt
 - travis_retry pip install tox>=2.1.1 coveralls
 - tox --notest
-before_script:
-- .tox/py27/bin/celery worker -Q backache,backache-quarantine -l WARNING -c1 -A tests.celery_worker &
 script:
 - tox -e $(echo py$TRAVIS_PYTHON_VERSION | tr -d . )
 after_success: coveralls --verbose
@@ -40,4 +39,4 @@ deploy:
     repo: cogniteev/backache
 notifications:
   slack:
-    secure: wEsybSQhs6kDluKeQlwrSPVjHmwm7yGK0zLl0h3UoWy0SnUzlOkr1JTgvbrRyFRbyG1dwy8Q78WCdYbdzted1mSKYXESsMN+rifaREsnzNj83Y7f5BqZyjN2kfnvVc8JjF6pWC39b2kPLtcNYqcYJfjFf6bn+Iccw+fnN2TY0bHF0GSUF7qHFK0qy3/u29B+k+gnDA8mzgTEbsI8gfHDC6xdzkavEiqi1oW4iD2IUpd6F4XYzBacwmyhXetJyxXPL26uSj2KUh9UwXiV9tAi6WM1L2ZvdYehG/iROUr1srOr7w8Y49mhU6k1yKbTHgihMpuQ+gMYd+aFLUFRB3dR0yxvZjaluNK5yCZoSoPOF9Gu65INNK1+bzwgYkgX9T0Su6reCUB3tS170gWsiByj3QuHl8yLmnGj6x/9SgE4FAHb7JJgObEtN0Bbht+81lFTJRISD7mGBtqwblMCw+UuVN7yyv29DAW1JJP79CZxie7DIjZDRtawwp7IDvJpzPs1rTOcr8jlzo3Haa/cbyGqN0rXXKwTWfdsloG/aEqOvkgFHcBWy1f6dzTh08Suw7frk/iTci0j2wFLWcyfZKqFQKWodA7yWb8nK1gPy0puSUBG2gMqyHCpqSVlu2cUTBPP4GxOClDJdH92aVacrPEBitODOQpQPmkmafFmBTy88n4=
+    secure: iQUKnGXx5axfGoHxqVtAnEBqlMbzZrD7C7zu3jZMuLyHllUHsrCDTwDeDHUNZFarKhDEOluD3RFHxHgct3RUJih+GV7+mB4GXWy7787uGJcIsZ65L29wfio373y7KiaB4rB+4cGpbQLcTX8peE0u3Z1ODeR0+Ynm3oxjf5u25T5zMGvrCUBXanYLDYjPYh5JOlXZKcm0w1C7fIQG7lHpSwdD6t02maMOUVdBlT5SMdUvILVLWtHBW4rHvGrQoPQPgbET3DxcT9736/Of1NhvFs0eFn0UU8ZR2Zs6G5n8a2JEFje7e/q3aYvYi9y0eyScDSYAQHVlX+inK86Qd+VUh87DtpJsZ/M34jCyk3rJLIs5pxXvvmDnOH6qQQhkKjhRxM+Wk5FRlcGg3Wdrl2a+G4GCSZy7D+gdi1Sci8V9Kx/aXCmxfNcy0T381sQQD6//WgXiUyjYSGy7hxmuc4sTMsF4yVBxC+wE7LLpjMYXEEnVw4XqZm9e2sc4SNb4Y/XhAuF6e8SPFwlXGFCK1/CHSxjH9d9+eWVuLND8gLXhQf/+Cbhetorx0AGi6TDFu4qzTBEC/uvPG/w+TIZ11gQLofWqdNxs8EW98jiUa3Qq0FKOvDi6KaN0RsVuHLfeyOhoeCv6CamIMafV2LCHgjK4hKDVsILMRgsrMd8Ig4UwGR4=
